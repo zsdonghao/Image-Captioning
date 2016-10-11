@@ -36,6 +36,7 @@ tf.logging.set_verbosity(tf.logging.INFO) # Enable tf.logging
 
 max_caption_length = 20
 top_k = 3
+n_captions = 15
 
 def main(_):
   # Model checkpoint file or directory containing a model checkpoint file.
@@ -87,24 +88,26 @@ def main(_):
       for filename in filenames:
           with tf.gfile.GFile(filename, "r") as f:
             encoded_image = f.read()    # it is string, haven't decode !
-          state = sess.run(net_img_rnn.final_state,feed_dict={"image_feed:0": encoded_image})
-          state = np.hstack((state.c, state.h)) # (1, 1024)
 
-          a_id = vocab.start_id
-          sentence = ''
-          for _ in range(max_caption_length - 1):
-              softmax_output, state = sess.run([softmax, net_seq_rnn.final_state],
-                                        feed_dict={ input_feed : [a_id],
-                                                    state_feed : state,
-                                                    })
-              state = np.hstack((state.c, state.h))
-              a_id = tl.nlp.sample_top(softmax_output[0], top_k=top_k)
-              word = vocab.id_to_word(a_id)
-              if a_id == vocab.end_id:
-                  break
-              sentence += word + ' '
           print(filename)
-          print(sentence)
+          init_state = sess.run(net_img_rnn.final_state,feed_dict={"image_feed:0": encoded_image})
+          for _ in range(n_captions):
+              state = np.hstack((init_state.c, init_state.h)) # (1, 1024)
+              a_id = vocab.start_id
+              sentence = ''
+              for _ in range(max_caption_length - 1):
+                  softmax_output, state = sess.run([softmax, net_seq_rnn.final_state],
+                                            feed_dict={ input_feed : [a_id],
+                                                        state_feed : state,
+                                                        })
+                  state = np.hstack((state.c, state.h))
+                  a_id = tl.nlp.sample_top(softmax_output[0], top_k=top_k)
+                  word = vocab.id_to_word(a_id)
+                  if a_id == vocab.end_id:
+                      break
+                  sentence += word + ' '
+
+              print('  %s' % sentence)
 
 
 if __name__ == "__main__":

@@ -163,9 +163,9 @@ with g.as_default():
             learning_rate_decay_fn=learning_rate_decay_fn)
 
     sess = tf.InteractiveSession()
-    sess.run(tf.initialize_all_variables())
+    # sess.run(tf.initialize_all_variables())
     if mode != "inference":
-        print("tl : Restore InceptionV3")
+        print("tl : Restore InceptionV3 model from: %s" % inception_checkpoint_file)
         saver = tf.train.Saver(inception_variables)
         saver.restore(sess, inception_checkpoint_file)
         print("tl : Restore the lastest ckpt model from: %s" % train_dir)
@@ -185,7 +185,7 @@ for step in range(sess.run(global_step), number_of_steps):
     start_time = time.time()
     loss, _ = sess.run([total_loss, train_op])
     print("step %d: loss = %.4f (%.2f sec)" % (step, loss, time.time() - start_time))
-    if (step % 10000) == 0 and step != 0:
-        save_path = saver.save(sess, MODEL_DIR+"/train_tl/model.ckpt-"+str(step))
+    if (step % 20000) == 0 and step != 0:
+        save_path = saver.save(sess, MODEL_DIR+"/train/model.ckpt-"+str(step))
 coord.request_stop()
 coord.join(threads)
