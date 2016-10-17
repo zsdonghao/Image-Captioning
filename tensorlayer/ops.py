@@ -91,7 +91,7 @@ def set_gpu_fraction(sess=None, gpu_fraction=0.3):
 
     References
     ----------
-    `TensorFlow using GPU <https://www.tensorflow.org/versions/r0.9/how_tos/using_gpu/index.html>`_
+    - `TensorFlow using GPU <https://www.tensorflow.org/versions/r0.9/how_tos/using_gpu/index.html>`_
     """
     print("  tensorlayer: GPU MEM Fraction %f" % gpu_fraction)
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_fraction)
@@ -105,7 +105,7 @@ def set_gpu_fraction(sess=None, gpu_fraction=0.3):
 def disable_print():
     """Disable console output.
 
-    Example
+    Examples
     ---------
     >>> print("You can see me")
     >>> tl.ops.disable_print()
@@ -118,11 +118,11 @@ def disable_print():
     sys.stderr = os.devnull
 
 def enable_print():
-    """Enable console output. 
+    """Enable console output.
 
-    Example
+    Examples
     --------
-    >>> see tl.ops.disable_print()
+    - see tl.ops.disable_print()
     """
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
@@ -131,7 +131,7 @@ def enable_print():
 class temporary_disable_print:
     """Temporarily disable console output.
 
-    Example
+    Examples
     ---------
     >>> print("You can see me")
     >>> with tl.ops.temporary_disable_print() as t:
@@ -152,7 +152,21 @@ class temporary_disable_print:
 
 
 
+def get_site_packages_directory():
+    """Print and return the site-packages directory.
 
+    Examples
+    ---------
+    >>> loc = tl.ops.get_site_packages_directory()
+    """
+    import site
+    try:
+        loc = site.getsitepackages()
+        print("  tl.ops : site-packages in ", loc)
+        return loc
+    except:
+        print("  tl.ops : Cannot find package dir from virtual environment")
+        return False
 
 
 

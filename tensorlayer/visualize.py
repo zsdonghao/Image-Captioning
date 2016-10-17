@@ -2,13 +2,11 @@
 # -*- coding: utf8 -*-
 
 
-import matplotlib
+
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-# matplotlib.use('GTK')
-# matplotlib.pyplot.ioff()
 
 
 def W(W=None, second=10, saveable=True, shape=[28,28], name='mnist', fig_idx=2396512):

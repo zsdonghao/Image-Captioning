@@ -36,7 +36,7 @@ tf.logging.set_verbosity(tf.logging.INFO) # Enable tf.logging
 
 max_caption_length = 20
 top_k = 3
-n_captions = 15
+n_captions = 20
 
 def main(_):
   # Model checkpoint file or directory containing a model checkpoint file.
