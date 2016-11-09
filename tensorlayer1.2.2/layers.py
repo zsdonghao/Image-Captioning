@@ -123,7 +123,7 @@ def print_all_variables(train_only=False):
 
     Parameters
     ----------
-    train_only : boolean
+    train_only : boolen
         If True, only print the trainable variables, otherwise, print all variables.
     """
     tvar = tf.trainable_variables() if train_only else tf.all_variables()
@@ -159,6 +159,7 @@ class Layer(object):
         name ='layer'
     ):
         self.inputs = inputs
+        # if name in globals():
         if (name in set_keep['_layers_name_list']) and name_reuse == False:
             raise Exception("Layer '%s' already exists, please choice other 'name'.\
             \nHint : Use different name for different 'Layer' (The name is used to control parameter sharing)" % name)
@@ -170,19 +171,25 @@ class Layer(object):
 
     def print_params(self, details=True):
         ''' Print all info of parameters in the network'''
+        # try:
         for i, p in enumerate(self.all_params):
             if details:
                 try:
+                    # print("  param %d: %s (mean: %f, median: %f, std: %f)   %s" % (i, str(p.eval().shape), p.eval().mean(), np.median(p.eval()), p.eval().std(), p.name))
                     print("  param {:3}: {:15} (mean: {:<18}, median: {:<18}, std: {:<18})   {}".format(i, str(p.eval().shape), p.eval().mean(), np.median(p.eval()), p.eval().std(), p.name))
                 except:
                     raise Exception("Hint: print params details after sess.run(tf.initialize_all_variables()) or use network.print_params(False).")
             else:
                 print("  param {:3}: {:15}    {}".format(i, str(p.get_shape()), p.name))
         print("  num of params: %d" % self.count_params())
+        # except:
+        #     raise Exception("Hint: print params after sess.run(tf.initialize_all_variables()) or use tl.layers.print_all_variables()")
+
 
     def print_layers(self):
         ''' Print all info of layers in the network '''
         for i, p in enumerate(self.all_layers):
+            # print(vars(p))
             print("  layer %d: %s" % (i, str(p)))
 
     def count_params(self):
@@ -603,6 +610,7 @@ class DenseLayer(Layer):
                 self.outputs = act(tf.matmul(self.inputs, W) + b)
             else:
                 self.outputs = act(tf.matmul(self.inputs, W))
+        # self.outputs = act(tf.matmul(self.inputs, W) + b)
 
         # Hint : list(), dict() is pass by value (shallow), without them, it is
         # pass by reference.
@@ -614,9 +622,8 @@ class DenseLayer(Layer):
             self.all_params.extend( [W, b] )
         else:
             self.all_params.extend( [W] )
-        ## when ReconLayer updates the weights of encoder, shallow cope allows
-        # the weights in network can be changed at the same time, as they point
-        # to the same weights.
+        # shallow cope allows the weights in network can be changed at the same
+        # time, when ReconLayer updates the weights of encoder.
         #
         # e.g. the encoder points to same physical memory address
         # network = InputLayer(x, name='input_layer')
@@ -814,7 +821,7 @@ class ReconLayer(DenseLayer):
                         visualize.W(self.train_params[0].eval(), second=10, saveable=True, shape=[28,28], name=save_name+str(epoch+1), fig_idx=2012)
                         files.save_npz([self.all_params[0]] , name=save_name+str(epoch+1)+'.npz')
                     except:
-                        raise Exception("You should change the visualize.W() in ReconLayer.pretrain(), if you want to save the feature images for different dataset")
+                        raise Exception("You should change visualize.W(), if you want to save the feature images for different dataset")
 
 
 ## Noise layer
@@ -834,24 +841,9 @@ class DropoutLayer(Layer):
 
     Examples
     --------
-    - Define network
     >>> network = tl.layers.InputLayer(x, name='input_layer')
     >>> network = tl.layers.DropoutLayer(network, keep=0.8, name='drop1')
     >>> network = tl.layers.DenseLayer(network, n_units=800, act = tf.nn.relu, name='relu1')
-    >>> ...
-
-    - For training
-    >>> feed_dict = {x: X_train_a, y_: y_train_a}
-    >>> feed_dict.update( network.all_drop )     # enable noise layers
-    >>> sess.run(train_op, feed_dict=feed_dict)
-    >>> ...
-
-    - For testing
-    >>> dp_dict = tl.utils.dict_to_one( network.all_drop ) # disable noise layers
-    >>> feed_dict = {x: X_val_a, y_: y_val_a}
-    >>> feed_dict.update(dp_dict)
-    >>> err, ac = sess.run([cost, acc], feed_dict=feed_dict)
-    >>> ...
     """
     def __init__(
         self,
@@ -1098,39 +1090,27 @@ class DeConv2dLayer(Layer):
     Examples
     ---------
     - A part of the generator in DCGAN example
-    >>> batch_size = 64
-    >>> inputs = tf.placeholder(tf.float32, [batch_size, 100], name='z_noise')
+    >>> inputs = tf.placeholder(tf.float32, [64, 100], name='z_noise')
     >>> net_in = tl.layers.InputLayer(inputs, name='g/in')
     >>> net_h0 = tl.layers.DenseLayer(net_in, n_units = 8192,
     ...                            W_init = tf.random_normal_initializer(stddev=0.02),
     ...                            act = tf.identity, name='g/h0/lin')
-    >>> print(net_h0.outputs._shape)
+    >>> print(net_h0.outputs)
     ... (64, 8192)
     >>> net_h0 = tl.layers.ReshapeLayer(net_h0, shape = [-1, 4, 4, 512], name='g/h0/reshape')
     >>> net_h0 = tl.layers.BatchNormLayer(net_h0, is_train=is_train, name='g/h0/batch_norm')
     >>> net_h0.outputs = tf.nn.relu(net_h0.outputs, name='g/h0/relu')
-    >>> print(net_h0.outputs._shape)
+    >>> print(net_h0.outputs)
     ... (64, 4, 4, 512)
     >>> net_h1 = tl.layers.DeConv2dLayer(net_h0,
     ...                            shape = [5, 5, 256, 512],
-    ...                            output_shape = [batch_size, 8, 8, 256],
+    ...                            output_shape = [64, 8, 8, 256],
     ...                            strides=[1, 2, 2, 1],
     ...                            act=tf.identity, name='g/h1/decon2d')
     >>> net_h1 = tl.layers.BatchNormLayer(net_h1, is_train=is_train, name='g/h1/batch_norm')
     >>> net_h1.outputs = tf.nn.relu(net_h1.outputs, name='g/h1/relu')
-    >>> print(net_h1.outputs._shape)
+    >>> print(net_h1.outputs)
     ... (64, 8, 8, 256)
-
-    - U-Net
-    >>> ....
-    >>> conv10 = tl.layers.Conv2dLayer(conv9, act=tf.nn.relu,
-    ...        shape=[3,3,1024,1024], strides=[1,1,1,1], padding='SAME',
-    ...        W_init=w_init, b_init=b_init, name='conv10')
-    >>> print(conv10.outputs)
-    ... (batch_size, 32, 32, 1024)
-    >>> deconv1 = tl.layers.DeConv2dLayer(conv10, act=tf.nn.relu,
-    ...         shape=[3,3,512,1024], strides=[1,2,2,1], output_shape=[batch_size,64,64,512],
-    ...         padding='SAME', W_init=w_init, b_init=b_init, name='devcon1_1')
 
     References
     ----------
@@ -1153,7 +1133,7 @@ class DeConv2dLayer(Layer):
         Layer.__init__(self, name=name)
         self.inputs = layer.outputs
         print("  tensorlayer:Instantiate DeConv2dLayer %s: %s, %s, %s, %s, %s" %
-                            (self.name, str(shape), str(output_shape), str(strides), padding, act.__name__))
+                            (self.name, str(shape), str(output_shape), str(strides), padding, act))
         # print("  DeConv2dLayer: Untested")
         with tf.variable_scope(name) as vs:
             W = tf.get_variable(name='W_deconv2d', shape=shape, initializer=W_init, **W_init_args )
@@ -1284,14 +1264,14 @@ class DeConv3dLayer(Layer):
     ):
         Layer.__init__(self, name=name)
         self.inputs = layer.outputs
-        print("  tensorlayer:Instantiate DeConv3dLayer %s: %s, %s, %s, %s, %s" %
-                            (self.name, str(shape), str(output_shape), str(strides), padding, act.__name__))
+        print("  tensorlayer:Instantiate DeConv2dLayer %s: %s, %s, %s, %s, %s" %
+                            (self.name, str(shape), str(output_shape), str(strides), padding, act))
 
         with tf.variable_scope(name) as vs:
             W = tf.get_variable(name='W_deconv3d', shape=shape, initializer=W_init, **W_init_args )
             b = tf.get_variable(name='b_deconv3d', shape=(shape[-2]), initializer=b_init, **b_init_args )
 
-            self.outputs = act( tf.nn.conv3d_transpose(self.inputs, W, output_shape=output_shape, strides=strides, padding=padding) + b )
+        self.outputs = act( tf.nn.conv3d_transpose(self.inputs, W, output_shape=output_shape, strides=strides, padding=padding) + b )
 
         self.all_layers = list(layer.all_layers)
         self.all_params = list(layer.all_params)
@@ -1299,10 +1279,10 @@ class DeConv3dLayer(Layer):
         self.all_layers.extend( [self.outputs] )
         self.all_params.extend( [W, b] )
 
-# ## Normalization layer
+## Normalization layer
 class BatchNormLayer(Layer):
     """
-    The :class:`BatchNormLayer` class is a normalization layer, see ``tf.nn.batch_normalization`` and ``tf.nn.moments``.
+    The :class:`BatchNormLayer` class is a normalization layer, see ``tf.nn.batch_normalization``.
 
     Batch normalization on fully-connected or convolutional maps.
 
@@ -1314,21 +1294,22 @@ class BatchNormLayer(Layer):
         A decay factor for ExponentialMovingAverage.
     epsilon : float
         A small float number to avoid dividing by 0.
-    is_train : boolean
+    is_train : boolen
         Whether train or inference.
     name : a string or None
         An optional name to attach to this layer.
 
     References
     ----------
-    - `Source <https://github.com/ry/tensorflow-resnet/blob/master/resnet.py>`_
-    - `stackoverflow <http://stackoverflow.com/questions/38312668/how-does-one-do-inference-with-batch-normalization-with-tensor-flow>`_
+    - `tf.nn.batch_normalization <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/g3doc/api_docs/python/functions_and_classes/shard8/tf.nn.batch_normalization.md>`_
+    - `stackoverflow <http://stackoverflow.com/questions/33949786/how-could-i-use-batch-normalization-in-tensorflow>`_
+    - `tensorflow.contrib <https://github.com/tensorflow/tensorflow/blob/b826b79718e3e93148c3545e7aa3f90891744cc0/tensorflow/contrib/layers/python/layers/layers.py#L100>`_
     """
     def __init__(
         self,
         layer = None,
         decay = 0.999,
-        epsilon = 0.00001,
+        epsilon = 0.001,
         is_train = None,
         name ='batchnorm_layer',
     ):
@@ -1336,190 +1317,60 @@ class BatchNormLayer(Layer):
         self.inputs = layer.outputs
         print("  tensorlayer:Instantiate BatchNormLayer %s: decay: %f, epsilon: %f, is_train: %s" %
                             (self.name, decay, epsilon, is_train))
-        x_shape = self.inputs.get_shape()
-        params_shape = x_shape[-1:]
+        if is_train == None:
+            raise Exception("is_train must be True or False")
 
-        def _get_variable(name,
-                          shape,
-                          initializer,
-                          weight_decay=0.0,
-                          dtype='float',
-                          trainable=True):
-            "A little wrapper around tf.get_variable to do weight decay and add to"
-            "resnet collection"
-            if weight_decay > 0:
-                regularizer = tf.contrib.layers.l2_regularizer(weight_decay)
-            else:
-                regularizer = None
-            # collections = [tf.GraphKeys.VARIABLES, RESNET_VARIABLES]
-            return tf.get_variable(name,
-                                   shape=shape,
-                                   initializer=initializer,
-                                   dtype=dtype,
-                                   regularizer=regularizer,
-                                #    collections=collections,
-                                   trainable=trainable)
-
-        from tensorflow.python.training import moving_averages
-        from tensorflow.python.ops import control_flow_ops
+        # (name, input_var, decay, epsilon, is_train)
+        inputs_shape = self.inputs.get_shape()
+        axis = list(range(len(inputs_shape) - 1))
+        params_shape = inputs_shape[-1:]
 
         with tf.variable_scope(name) as vs:
-            # if use_bias:
-            #     bias = _get_variable('bias', params_shape,
-            #                          initializer=tf.zeros_initializer)
-            #     return self.inputs + bias
-
-            axis = list(range(len(x_shape) - 1))
-
-            beta = _get_variable('beta',
-                                 params_shape,
-                                 initializer=tf.zeros_initializer)
-            gamma = _get_variable('gamma',
-                                  params_shape,
-                                  initializer=tf.ones_initializer)
-
-            # trainable=False means : it prevent TF from updating this variable
-            # from the gradient, we have to update this from the mean computed
-            # from each batch during training
-            moving_mean = _get_variable('moving_mean',
-                                        params_shape,
-                                        initializer=tf.zeros_initializer,
-                                        trainable=False)
-            moving_variance = _get_variable('moving_variance',
-                                            params_shape,
-                                            initializer=tf.ones_initializer,
-                                            trainable=False)
-
-            # These ops will only be preformed when training.
-            mean, variance = tf.nn.moments(self.inputs, axis)
-            update_moving_mean = moving_averages.assign_moving_average(moving_mean,
-                                                                       mean, decay)
-            update_moving_variance = moving_averages.assign_moving_average(
-                moving_variance, variance, decay)
-            # tf.add_to_collection(UPDATE_OPS_COLLECTION, update_moving_mean)
-            # tf.add_to_collection(UPDATE_OPS_COLLECTION, update_moving_variance)
+            beta = tf.get_variable(name='beta', shape=params_shape,
+                                 initializer=tf.constant_initializer(0.0))
+            gamma = tf.get_variable(name='gamma', shape=params_shape,
+                                  initializer=tf.constant_initializer(1.0))
+            batch_mean, batch_var = tf.nn.moments(self.inputs,
+                                                axis,
+                                                name='moments')
+            ema = tf.train.ExponentialMovingAverage(decay=decay)
 
             def mean_var_with_update():
-                with tf.control_dependencies([update_moving_mean, update_moving_variance]):
-                    return tf.identity(mean), tf.identity(variance)
+              ema_apply_op = ema.apply([batch_mean, batch_var])
+              with tf.control_dependencies([ema_apply_op]):
+                  return tf.identity(batch_mean), tf.identity(batch_var)
 
             if is_train:
-                is_train = tf.cast(tf.ones([]), tf.bool)
+                is_train = tf.cast(tf.ones(1), tf.bool)
             else:
-                is_train = tf.cast(tf.zeros([]), tf.bool)
+                is_train = tf.cast(tf.zeros(1), tf.bool)
 
-            mean, variance = control_flow_ops.cond(
-                # is_train, lambda: (mean, variance),     # when training, (x-mean(x))/var(x)
-                is_train, mean_var_with_update,
-                lambda: (moving_mean, moving_variance)) # when inferencing, (x-0)/1
+            is_train = tf.reshape(is_train, [])
 
-            self.outputs = tf.nn.batch_normalization(self.inputs, mean, variance, beta, gamma, epsilon)
-            #x.set_shape(inputs.get_shape()) ??
-            variables = tf.get_collection(tf.GraphKeys.VARIABLES, scope=vs.name)
-
-            # print(len(variables))
-            # for idx, v in enumerate(variables):
-            #     print("  var {:3}: {:15}   {}".format(idx, str(v.get_shape()), v.name))
+            # print(is_train)
             # exit()
+
+            mean, var = tf.cond(
+              is_train,
+              mean_var_with_update,
+              lambda: (ema.average(batch_mean), ema.average(batch_var))
+            )
+            normed = tf.nn.batch_normalization(
+              x=self.inputs,
+              mean=mean,
+              variance=var,
+              offset=beta,
+              scale=gamma,
+              variance_epsilon=epsilon,
+              name='tf_bn'
+            )
+        self.outputs = normed
 
         self.all_layers = list(layer.all_layers)
         self.all_params = list(layer.all_params)
         self.all_drop = dict(layer.all_drop)
         self.all_layers.extend( [self.outputs] )
-        self.all_params.extend( variables )
-        # self.all_params.extend( [beta, gamma] )
-
-# class BatchNormLayer(Layer):
-#     """
-#     The :class:`BatchNormLayer` class is a normalization layer, see ``tf.nn.batch_normalization``.
-#
-#     Batch normalization on fully-connected or convolutional maps.
-#
-#     Parameters
-#     -----------
-#     layer : a :class:`Layer` instance
-#         The `Layer` class feeding into this layer.
-#     decay : float
-#         A decay factor for ExponentialMovingAverage.
-#     epsilon : float
-#         A small float number to avoid dividing by 0.
-#     is_train : boolean
-#         Whether train or inference.
-#     name : a string or None
-#         An optional name to attach to this layer.
-#
-#     References
-#     ----------
-#     - `tf.nn.batch_normalization <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/g3doc/api_docs/python/functions_and_classes/shard8/tf.nn.batch_normalization.md>`_
-#     - `stackoverflow <http://stackoverflow.com/questions/33949786/how-could-i-use-batch-normalization-in-tensorflow>`_
-#     - `tensorflow.contrib <https://github.com/tensorflow/tensorflow/blob/b826b79718e3e93148c3545e7aa3f90891744cc0/tensorflow/contrib/layers/python/layers/layers.py#L100>`_
-#     """
-#     def __init__(
-#         self,
-#         layer = None,
-#         decay = 0.999,
-#         epsilon = 0.001,
-#         is_train = None,
-#         name ='batchnorm_layer',
-#     ):
-#         Layer.__init__(self, name=name)
-#         self.inputs = layer.outputs
-#         print("  tensorlayer:Instantiate BatchNormLayer %s: decay: %f, epsilon: %f, is_train: %s" %
-#                             (self.name, decay, epsilon, is_train))
-#         if is_train == None:
-#             raise Exception("is_train must be True or False")
-#
-#         # (name, input_var, decay, epsilon, is_train)
-#         inputs_shape = self.inputs.get_shape()
-#         axis = list(range(len(inputs_shape) - 1))
-#         params_shape = inputs_shape[-1:]
-#
-#         with tf.variable_scope(name) as vs:
-#             beta = tf.get_variable(name='beta', shape=params_shape,
-#                                  initializer=tf.constant_initializer(0.0))
-#             gamma = tf.get_variable(name='gamma', shape=params_shape,
-#                                   initializer=tf.constant_initializer(1.0))
-#             batch_mean, batch_var = tf.nn.moments(self.inputs,
-#                                                 axis,
-#                                                 name='moments')
-#             ema = tf.train.ExponentialMovingAverage(decay=decay)
-#
-#             def mean_var_with_update():
-#               ema_apply_op = ema.apply([batch_mean, batch_var])
-#               with tf.control_dependencies([ema_apply_op]):
-#                   return tf.identity(batch_mean), tf.identity(batch_var)
-#
-#             if is_train:
-#                 is_train = tf.cast(tf.ones(1), tf.bool)
-#             else:
-#                 is_train = tf.cast(tf.zeros(1), tf.bool)
-#
-#             is_train = tf.reshape(is_train, [])
-#
-#             # print(is_train)
-#             # exit()
-#
-#             mean, var = tf.cond(
-#               is_train,
-#               mean_var_with_update,
-#               lambda: (ema.average(batch_mean), ema.average(batch_var))
-#             )
-#             normed = tf.nn.batch_normalization(
-#               x=self.inputs,
-#               mean=mean,
-#               variance=var,
-#               offset=beta,
-#               scale=gamma,
-#               variance_epsilon=epsilon,
-#               name='tf_bn'
-#             )
-#         self.outputs = normed
-#
-#         self.all_layers = list(layer.all_layers)
-#         self.all_params = list(layer.all_params)
-#         self.all_drop = dict(layer.all_drop)
-#         self.all_layers.extend( [self.outputs] )
-#         self.all_params.extend( [beta, gamma] )
+        self.all_params.extend( [beta, gamma] )
 
 
 ## Pooling layer
@@ -1600,11 +1451,11 @@ class RNNLayer(Layer):
         The sequence length.
     initial_state : None or RNN State
         If None, initial_state is zero_state.
-    return_last : boolean
+    return_last : boolen
         - If True, return the last output, "Sequence input and single output"
         - If False, return all outputs, "Synced sequence input and output"
         - In other word, if you want to apply one or more RNN(s) on this layer, set to False.
-    return_seq_2d : boolean
+    return_seq_2d : boolen
         - When return_last = False
         - If True, return 2D Tensor [n_example, n_hidden], for stacking DenseLayer after it.
         - If False, return 3D Tensor [n_example/n_steps, n_steps, n_hidden], for stacking multiple RNN after it.
@@ -1629,9 +1480,6 @@ class RNNLayer(Layer):
         It is the initial state of this RNN layer, you can use it to initialize
         your state at the begining of each epoch or iteration according to your
         training procedure.
-
-    batch_size : int or tensor
-        Is int, if able to compute the batch_size, otherwise, tensor for ``?``.
 
     Examples
     --------
@@ -1717,7 +1565,7 @@ class RNNLayer(Layer):
 
     Notes
     -----
-    Input dimension should be rank 3 : [batch_size, n_steps, n_features], if no, please see :class:`ReshapeLayer`.
+    Input dimension should be rank 3 : [batch_size, n_steps(max), n_features], if no, please see :class:`ReshapeLayer`.
 
     References
     ----------
@@ -1754,10 +1602,10 @@ class RNNLayer(Layer):
         try:
             self.inputs.get_shape().with_rank(3)
         except:
-            raise Exception("RNN : Input dimension should be rank 3 : [batch_size, n_steps, n_features]")
+            raise Exception("RNN : Input dimension should be rank 3 : [batch_size, n_steps(max), n_features]")
 
 
-        # is_reshape : boolean (deprecate)
+        # is_reshape : boolen (deprecate)
         #     Reshape the inputs to 3 dimension tensor.\n
         #     If input is［batch_size, n_steps, n_features], we do not need to reshape it.\n
         #     If input is [batch_size * n_steps, n_features], we need to reshape it.
@@ -1825,198 +1673,8 @@ class RNNLayer(Layer):
         self.all_layers.extend( [self.outputs] )
         self.all_params.extend( rnn_variables )
 
-
-class BiRNNLayer(Layer):
-    """
-    The :class:`BiRNNLayer` class is a Bidirectional RNN layer.
-
-    Parameters
-    ----------
-    layer : a :class:`Layer` instance
-        The `Layer` class feeding into this layer.
-    cell_fn : a TensorFlow's core RNN cell as follow.
-        - see `RNN Cells in TensorFlow <https://www.tensorflow.org/versions/master/api_docs/python/rnn_cell.html>`_
-        - class ``tf.nn.rnn_cell.BasicRNNCell``
-        - class ``tf.nn.rnn_cell.BasicLSTMCell``
-        - class ``tf.nn.rnn_cell.GRUCell``
-        - class ``tf.nn.rnn_cell.LSTMCell``
-    cell_init_args : a dictionary
-        The arguments for the cell initializer.
-    n_hidden : a int
-        The number of hidden units in the layer.
-    initializer : initializer
-        The initializer for initializing the parameters.
-    n_steps : a int
-        The sequence length.
-    fw_initial_state : None or forward RNN State
-        If None, initial_state is zero_state.
-    bw_initial_state : None or backward RNN State
-        If None, initial_state is zero_state.
-    dropout : `tuple` of `float`: (input_keep_prob, output_keep_prob).
-        The input and output keep probability.
-    n_layer : a int, default is 1.
-        The number of RNN layers.
-    return_last : boolean
-        - If True, return the last output, "Sequence input and single output"
-        - If False, return all outputs, "Synced sequence input and output"
-        - In other word, if you want to apply one or more RNN(s) on this layer, set to False.
-    return_seq_2d : boolean
-        - When return_last = False
-        - If True, return 2D Tensor [n_example, n_hidden], for stacking DenseLayer after it.
-        - If False, return 3D Tensor [n_example/n_steps, n_steps, n_hidden], for stacking multiple RNN after it.
-    name : a string or None
-        An optional name to attach to this layer.
-
-    Variables
-    --------------
-    outputs : a tensor
-        The output of this RNN.
-        return_last = False, outputs = all cell_output, which is the hidden state.
-            cell_output.get_shape() = (?, n_hidden)
-
-    fw(bw)_final_state : a tensor or StateTuple
-        When state_is_tuple = False,
-        it is the final hidden and cell states, states.get_shape() = [?, 2 * n_hidden].\n
-        When state_is_tuple = True, it stores two elements: (c, h), in that order.
-        You can get the final state after each iteration during training, then
-        feed it to the initial state of next iteration.
-
-    fw(bw)_initial_state : a tensor or StateTuple
-        It is the initial state of this RNN layer, you can use it to initialize
-        your state at the begining of each epoch or iteration according to your
-        training procedure.
-
-    batch_size : int or tensor
-        Is int, if able to compute the batch_size, otherwise, tensor for ``?``.
-
-    Notes
-    -----
-    - Input dimension should be rank 3 : [batch_size, n_steps, n_features], if no, please see :class:`ReshapeLayer`.
-    - For predicting, the sequence length has to be the same with the sequence length of training, while, for normal
-    RNN, we can use sequence length of 1 for predicting.
-
-    References
-    ----------
-    - `Source <https://github.com/akaraspt/deepsleep/blob/master/deepsleep/model.py>`_
-    """
-    def __init__(
-        self,
-        layer = None,
-        cell_fn = tf.nn.rnn_cell.LSTMCell,
-        cell_init_args = {'use_peepholes':True, 'state_is_tuple':True},
-        n_hidden = 100,
-        initializer = tf.random_uniform_initializer(-0.1, 0.1),
-        n_steps = 5,
-        fw_initial_state = None,
-        bw_initial_state = None,
-        dropout = None,
-        n_layer = 1,
-        return_last = False,
-        return_seq_2d = False,
-        name = 'birnn_layer',
-    ):
-        Layer.__init__(self, name=name)
-        self.inputs = layer.outputs
-
-        print("  tensorlayer:Instantiate BiRNNLayer %s: n_hidden:%d, n_steps:%d, in_dim:%d %s, cell_fn:%s, dropout:%s, n_layer:%d " % (self.name, n_hidden,
-            n_steps, self.inputs.get_shape().ndims, self.inputs.get_shape(), cell_fn.__name__, dropout, n_layer))
-
-        fixed_batch_size = self.inputs.get_shape().with_rank_at_least(1)[0]
-
-        if fixed_batch_size.value:
-            self.batch_size = fixed_batch_size.value
-            print("     RNN batch_size (concurrent processes): %d" % self.batch_size)
-        else:
-            from tensorflow.python.ops import array_ops
-            self.batch_size = array_ops.shape(self.inputs)[0]
-            print("     non specified batch_size, uses a tensor instead.")
-
-        # Input dimension should be rank 3 [batch_size, n_steps(max), n_features]
-        try:
-            self.inputs.get_shape().with_rank(3)
-        except:
-            raise Exception("RNN : Input dimension should be rank 3 : [batch_size, n_steps, n_features]")
-
-        with tf.variable_scope(name, initializer=initializer) as vs:
-            self.fw_cell = cell_fn(num_units=n_hidden, **cell_init_args)
-            self.bw_cell = cell_fn(num_units=n_hidden, **cell_init_args)
-            # Apply dropout
-            if dropout:
-                if type(dropout) in [tuple, list]:
-                    in_keep_prob = dropout[0]
-                    out_keep_prob = dropout[1]
-                elif isinstance(dropout, float):
-                    in_keep_prob, out_keep_prob = dropout, dropout
-                else:
-                    raise Exception("Invalid dropout type (must be a 2-D tuple of "
-                                    "float)")
-                self.fw_cell = tf.nn.rnn_cell.DropoutWrapper(
-                          self.fw_cell,
-                          input_keep_prob=in_keep_prob,
-                          output_keep_prob=out_keep_prob)
-                self.bw_cell = tf.nn.rnn_cell.DropoutWrapper(
-                          self.bw_cell,
-                          input_keep_prob=in_keep_prob,
-                          output_keep_prob=out_keep_prob)
-            # Apply multiple layers
-            if n_layer > 1:
-                print("     n_layer: %d" % n_layer)
-                try:
-                    self.fw_cell = tf.nn.rnn_cell.MultiRNNCell([self.fw_cell] * n_layer,
-                                                          state_is_tuple=True)
-                    self.bw_cell = tf.nn.rnn_cell.MultiRNNCell([self.bw_cell] * n_layer,
-                                                          state_is_tuple=True)
-                except:
-                    self.fw_cell = tf.nn.rnn_cell.MultiRNNCell([self.fw_cell] * n_layer)
-                    self.bw_cell = tf.nn.rnn_cell.MultiRNNCell([self.bw_cell] * n_layer)
-
-            # Initial state of RNN
-            if fw_initial_state is None:
-                self.fw_initial_state = self.fw_cell.zero_state(self.batch_size, dtype=tf.float32)
-            else:
-                self.fw_initial_state = fw_initial_state
-            if bw_initial_state is None:
-                self.bw_initial_state = self.bw_cell.zero_state(self.batch_size, dtype=tf.float32)
-            else:
-                self.bw_initial_state = bw_initial_state
-            # exit()
-            # Feedforward to MultiRNNCell
-            list_rnn_inputs = tf.unpack(self.inputs, axis=1)
-            outputs, fw_state, bw_state = tf.nn.bidirectional_rnn(
-                cell_fw=self.fw_cell,
-                cell_bw=self.bw_cell,
-                inputs=list_rnn_inputs,
-                initial_state_fw=self.fw_initial_state,
-                initial_state_bw=self.bw_initial_state
-            )
-
-            if return_last:
-                self.outputs = outputs[-1]
-            else:
-                self.outputs = outputs
-                if return_seq_2d:
-                    # 2D Tensor [n_example, n_hidden]
-                    self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, n_hidden*2])
-                else:
-                    # <akara>: stack more RNN layer after that
-                    # 3D Tensor [n_example/n_steps, n_steps, n_hidden]
-                    self.outputs = tf.reshape(tf.concat(1, outputs), [-1, n_steps, n_hidden*2])
-            self.fw_final_state = fw_state
-            self.bw_final_state = bw_state
-
-            # Retrieve just the RNN variables.
-            rnn_variables = tf.get_collection(tf.GraphKeys.VARIABLES, scope=vs.name)
-
-        print("     n_params : %d" % (len(rnn_variables)))
-
-        self.all_layers = list(layer.all_layers)
-        self.all_params = list(layer.all_params)
-        self.all_drop = dict(layer.all_drop)
-        self.all_layers.extend( [self.outputs] )
-        self.all_params.extend( rnn_variables )
-
-
 # Dynamic RNN
+
 def advanced_indexing_op(input, index):
     """ Advanced Indexing for Sequences. see TFlearn."""
     batch_size = tf.shape(input)[0]
@@ -2063,11 +1721,11 @@ class DynamicRNNLayer(Layer):
         The input and output keep probability.
     n_layer : a int, default is 1.
         The number of RNN layers.
-    return_last : boolean
+    return_last : boolen
         - If True, return the last output, "Sequence input and single output"
         - If False, return all outputs, "Synced sequence input and output"
         - In other word, if you want to apply one or more RNN(s) on this layer, set to False.
-    return_seq_2d : boolean
+    return_seq_2d : boolen
         - When return_last = False
         - If True, return 2D Tensor [n_example, n_hidden], for stacking DenseLayer or computing cost after it.
         - If False, return 3D Tensor [n_example/n_steps(max), n_steps(max), n_hidden], for stacking multiple RNN after it.
@@ -2143,8 +1801,8 @@ class DynamicRNNLayer(Layer):
         Layer.__init__(self, name=name)
         self.inputs = layer.outputs
 
-        print("  tensorlayer:Instantiate DynamicRNNLayer %s: n_hidden:%d, in_dim:%d %s, cell_fn:%s, dropout:%s, n_layer:%d" % (self.name, n_hidden,
-             self.inputs.get_shape().ndims, self.inputs.get_shape(), cell_fn.__name__, dropout, n_layer))
+        print("  tensorlayer:Instantiate DynamicRNNLayer %s: n_hidden:%d, in_dim:%d %s, cell_fn:%s " % (self.name, n_hidden,
+             self.inputs.get_shape().ndims, self.inputs.get_shape(), cell_fn.__name__))
 
         # Input dimension should be rank 3 [batch_size, n_steps(max), n_features]
         try:
@@ -2183,10 +1841,7 @@ class DynamicRNNLayer(Layer):
         # Apply multiple layers
         if n_layer > 1:
             print("     n_layer: %d" % n_layer)
-            try:
-                self.cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * n_layer, state_is_tuple=True)
-            except:
-                self.cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * n_layer)
+            self.cell = tf.nn.rnn_cell.MultiRNNCell([self.cell] * n_layer, state_is_tuple=True)
 
         # Initialize initial_state
         if initial_state is None:
@@ -2225,15 +1880,15 @@ class DynamicRNNLayer(Layer):
         else:
             # [batch_size, n_step(max), n_hidden]
             # self.outputs = result[0]["outputs"]
-            # self.outputs = outputs    # it is 3d, but it is a list
+            self.outputs = outputs
             if return_seq_2d:
                 # PTB tutorial:
                 # 2D Tensor [n_example, n_hidden]
-                self.outputs = tf.reshape(tf.concat(1, outputs), [-1, n_hidden])
-            else:
+                self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, n_hidden])
+            # else:
                 # <akara>:
                 # 3D Tensor [batch_size, n_steps, n_hidden]
-                self.outputs = tf.reshape(tf.concat(1, outputs), [-1, n_steps, n_hidden])
+                # self.outputs = tf.reshape(tf.concat(1, self.outputs), [-1, n_steps, n_hidden])
 
 
         # Final state
@@ -2271,11 +1926,11 @@ class BiDynamicRNNLayer(Layer):
         The number of hidden units in the layer.
     n_steps : a int
         The sequence length.
-    return_last : boolean
+    return_last : boolen
         If True, return the last output, "Sequence input and single output"\n
         If False, return all outputs, "Synced sequence input and output"\n
         In other word, if you want to apply one or more RNN(s) on this layer, set to False.
-    return_seq_2d : boolean
+    return_seq_2d : boolen
         When return_last = False\n
             if True, return 2D Tensor [n_example, n_hidden], for stacking DenseLayer after it.
             if False, return 3D Tensor [n_example/n_steps, n_steps, n_hidden], for stacking multiple RNN after it.
@@ -2535,105 +2190,6 @@ class ReshapeLayer(Layer):
         self.all_drop = dict(layer.all_drop)
         self.all_layers.extend( [self.outputs] )
 
-
-
-class LambdaLayer(Layer):
-    """
-    The :class:`LambdaLayer` class is a layer which is able to use the provided function.
-
-    Parameters
-    ----------
-    layer : a :class:`Layer` instance
-        The `Layer` class feeding into this layer.
-    fn : a function
-        The function that applies to the outputs of previous layer.
-    fn_args : a dictionary
-        The arguments for the function (option).
-    name : a string or None
-        An optional name to attach to this layer.
-
-    Examples
-    ---------
-    >>> x = tf.placeholder(tf.float32, shape=[None, 1], name='x')
-    >>> network = tl.layers.InputLayer(x, name='input_layer')
-    >>> network = LambdaLayer(network, lambda x: 2*x, name='lambda_layer')
-    >>> y = network.outputs
-    >>> sess = tf.InteractiveSession()
-    >>> out = sess.run(y, feed_dict={x : [[1],[2]]})
-    ... [[2],[4]]
-    """
-    def __init__(
-        self,
-        layer = None,
-        fn = None,
-        fn_args = {},
-        name = 'lambda_layer',
-    ):
-        Layer.__init__(self, name=name)
-        self.inputs = layer.outputs
-
-        print("  tensorlayer:Instantiate LambdaLayer  %s" % self.name)
-        with tf.variable_scope(name) as vs:
-            self.outputs = fn(self.inputs, **fn_args)
-            variables = tf.get_collection(tf.GraphKeys.VARIABLES, scope=vs.name)
-
-        self.all_layers = list(layer.all_layers)
-        self.all_params = list(layer.all_params)
-        self.all_drop = dict(layer.all_drop)
-        self.all_layers.extend( [self.outputs] )
-        self.all_params.extend( variables )
-
-## Logic layer
-class ElementwiseLayer(Layer):
-    """
-    The :class:`ElementwiseLayer` class combines multiple :class:`Layer` which have the same output shapes by a given elemwise-wise operation.
-
-    Parameters
-    ----------
-    layer : a list of :class:`Layer` instances
-        The `Layer` class feeding into this layer.
-    combine_fn : a TensorFlow elemwise-merge function
-        e.g. AND is ``tf.minimum`` ;  OR is ``tf.maximum`` ; ADD is ``tf.add`` ; MUL is ``tf.mul`` and so on.
-        See `TensorFlow Math API <https://www.tensorflow.org/versions/master/api_docs/python/math_ops.html#math>`_ .
-    name : a string or None
-        An optional name to attach to this layer.
-
-    Examples
-    --------
-    - AND Logic
-    >>> net_0 = tl.layers.DenseLayer(net_0, n_units=500,
-    ...                        act = tf.nn.relu, name='net_0')
-    >>> net_1 = tl.layers.DenseLayer(net_1, n_units=500,
-    ...                        act = tf.nn.relu, name='net_1')
-    >>> net_com = tl.layers.ElementwiseLayer(layer = [net_0, net_1],
-    ...                         combine_fn = tf.minimum,
-    ...                         name = 'combine_layer')
-    """
-    def __init__(
-        self,
-        layer = [],
-        combine_fn = tf.minimum,
-        name ='elementwise_layer',
-    ):
-        Layer.__init__(self, name=name)
-
-        print("  tensorlayer:Instantiate ElementwiseLayer %s:  %s, %s" % (self.name, layer[0].outputs._shape, combine_fn.__name__))
-
-        self.outputs = layer[0].outputs
-        # print(self.outputs._shape, type(self.outputs._shape))
-        for l in layer[1:]:
-            assert str(self.outputs._shape) == str(l.outputs._shape), "Hint: the input shapes should be the same. %s != %s" %  (self.outputs._shape , str(l.outputs._shape))
-            self.outputs = combine_fn(self.outputs, l.outputs, name=name)
-
-        self.all_layers = list(layer[0].all_layers)
-        self.all_params = list(layer[0].all_params)
-        self.all_drop = dict(layer[0].all_drop)
-
-        for i in range(1, len(layer)):
-            self.all_layers.extend(list(layer[i].all_layers))
-            self.all_params.extend(list(layer[i].all_params))
-            self.all_drop.update(dict(layer[i].all_drop))
-
 ## TF-Slim layer
 class SlimNetsLayer(Layer):
     """
@@ -2647,14 +2203,8 @@ class SlimNetsLayer(Layer):
         The `Layer` class feeding into this layer.
     slim_layer : a slim network function
         The network you want to stack onto, end with ``return net, end_points``.
-    slim_args : dictionary
-        The arguments for the slim model.
     name : a string or None
         An optional name to attach to this layer.
-
-    Examples
-    --------
-    - see Inception V3 example on `Github <https://github.com/zsdonghao/tensorlayer>`_
 
     Notes
     -----
@@ -2666,22 +2216,15 @@ class SlimNetsLayer(Layer):
         layer = None,
         slim_layer = None,
         slim_args = {},
-        name ='InceptionV3',
+        name ='slim_layer',
     ):
         Layer.__init__(self, name=name)
         self.inputs = layer.outputs
         print("  tensorlayer:Instantiate SlimNetsLayer %s: %s" % (self.name, slim_layer.__name__))
 
-        # with tf.variable_scope(name) as vs:
-        #     net, end_points = slim_layer(self.inputs, **slim_args)
-        #     slim_variables = tf.get_collection(tf.GraphKeys.VARIABLES, scope=vs.name)
-
-        net, end_points = slim_layer(self.inputs, **slim_args)
-
-        slim_variables = tf.get_collection(tf.GraphKeys.VARIABLES, scope=name)
-        if slim_variables == []:
-            print("No variables found under %s : the name of SlimNetsLayer should be matched with the begining of the ckpt file, see tutorial_inceptionV3_tfslim.py for more details" % name)
-
+        with tf.variable_scope(name) as vs:
+            net, end_points = slim_layer(self.inputs, **slim_args)
+            slim_variables = tf.get_collection(tf.GraphKeys.VARIABLES, scope=vs.name)
 
         self.outputs = net
 
@@ -2707,10 +2250,9 @@ class PReluLayer(Layer):
     x : A `Tensor` with type `float`, `double`, `int32`, `int64`, `uint8`,
         `int16`, or `int8`.
     channel_shared : `bool`. Single weight is shared by all channels
-    a_init : alpha initializer, default zero constant.
+    W_init: weights initializer, default zero constant.
         The initializer for initializing the alphas.
-    a_init_args : dictionary
-        The arguments for the weights initializer.
+    restore : `bool`. Restore or not alphas
     name : A name for this activation op (optional).
 
     References
@@ -2721,28 +2263,30 @@ class PReluLayer(Layer):
         self,
         layer = None,
         channel_shared = False,
-        a_init = tf.constant_initializer(value=0.0),
-        a_init_args = {},
-        # restore = True,
+        W_init = tf.constant_initializer(value=0.0),
+        W_init_args = {},
+        restore = True,
         name="prelu_layer"
     ):
         Layer.__init__(self, name=name)
         self.inputs = layer.outputs
-        print("  tensorlayer:Instantiate PReluLayer %s: channel_shared:%s" % (self.name, channel_shared))
+        print("  tensorlayer:Instantiate PReluLayer %s: %s" % (self.name, channel_shared))
+        print('     [Warning] prelu: untested !!!')
         if channel_shared:
             w_shape = (1,)
         else:
-            w_shape = int(self.inputs._shape[-1])
+            w_shape = int(self.inputs._shape[-1:])
 
         with tf.name_scope(name) as scope:
-            alphas = tf.get_variable(name='alphas', shape=w_shape, initializer=a_init, **a_init_args )
+            # W_init = initializations.get(weights_init)()
+            alphas = tf.get_variable(name='alphas', shape=w_shape, initializer=W_init, **W_init_args )
             self.outputs = tf.nn.relu(self.inputs) + tf.mul(alphas, (self.inputs - tf.abs(self.inputs))) * 0.5
 
         self.all_layers = list(layer.all_layers)
         self.all_params = list(layer.all_params)
         self.all_drop = dict(layer.all_drop)
 
-        self.all_layers.extend( [self.outputs] )
+        self.all_layers.extend( self.outputs )
         self.all_params.extend( [alphas] )
 
 

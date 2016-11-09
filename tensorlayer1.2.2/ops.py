@@ -19,7 +19,7 @@ def exit_tf(sess=None):
     sess : a session instance of TensorFlow
         TensorFlow session
     """
-    text = "[tl] Close tensorboard and nvidia-process if available"
+    text = "Close tensorboard and nvidia-process if available"
     sess.close()
     # import time
     # time.sleep(2)
@@ -103,7 +103,7 @@ def set_gpu_fraction(sess=None, gpu_fraction=0.3):
 
 
 def disable_print():
-    """Disable console output, ``suppress_stdout`` is recommended.
+    """Disable console output.
 
     Examples
     ---------
@@ -118,7 +118,7 @@ def disable_print():
     sys.stderr = os.devnull
 
 def enable_print():
-    """Enable console output, ``suppress_stdout`` is recommended.
+    """Enable console output.
 
     Examples
     --------
@@ -128,50 +128,27 @@ def enable_print():
     sys.stderr = sys.__stderr__
 
 
-# class temporary_disable_print:
-#     """Temporarily disable console output.
-#
-#     Examples
-#     ---------
-#     >>> print("You can see me")
-#     >>> with tl.ops.temporary_disable_print() as t:
-#     >>>     print("You can't see me")
-#     >>> print("You can see me")
-#     """
-#     def __init__(self):
-#         pass
-#     def __enter__(self):
-#         sys.stdout = None
-#         sys.stderr = os.devnull
-#     def __exit__(self, type, value, traceback):
-#         sys.stdout = sys.__stdout__
-#         sys.stderr = sys.__stderr__
-#         return isinstance(value, TypeError)
-
-
-from contextlib import contextmanager
-@contextmanager
-def suppress_stdout():
+class temporary_disable_print:
     """Temporarily disable console output.
 
     Examples
     ---------
     >>> print("You can see me")
-    >>> with tl.ops.suppress_stdout():
+    >>> with tl.ops.temporary_disable_print() as t:
     >>>     print("You can't see me")
     >>> print("You can see me")
-
-    References
-    -----------
-    - `stackoverflow <http://stackoverflow.com/questions/2125702/how-to-suppress-console-output-in-python>`_
     """
-    with open(os.devnull, "w") as devnull:
-        old_stdout = sys.stdout
-        sys.stdout = devnull
-        try:
-            yield
-        finally:
-            sys.stdout = old_stdout
+    def __init__(self):
+        pass
+    def __enter__(self):
+        sys.stdout = None
+        sys.stderr = os.devnull
+    def __exit__(self, type, value, traceback):
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+        return isinstance(value, TypeError)
+
+
 
 
 
@@ -193,28 +170,5 @@ def get_site_packages_directory():
 
 
 
-def empty_trash():
-    """Empty trash folder.
-
-    """
-    text = "[tl] Empty the trash"
-    if _platform == "linux" or _platform == "linux2":
-        print('linux: %s' % text)
-        os.system("rm -rf ~/.local/share/Trash/*")
-    elif _platform == "darwin":
-        print('OS X: %s' % text)
-        os.system("sudo rm -rf ~/.Trash/*")
-    elif _platform == "win32":
-        print('Windows: %s' % text)
-        try:
-            os.system("rd /s c:\$Recycle.Bin")  # Windows 7 or Server 2008
-        except:
-            pass
-        try:
-            os.system("rd /s c:\recycler")  #  Windows XP, Vista, or Server 2003
-        except:
-            pass
-    else:
-        print(_platform)
 
 #

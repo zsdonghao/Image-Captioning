@@ -172,7 +172,7 @@ def run():
     images, input_seqs, target_seqs, input_mask = Build_Inputs(mode, input_file_pattern)
     net_image_embeddings = Build_Image_Embeddings(mode, images, train_inception)
     net_seq_embeddings = Build_Seq_Embeddings(input_seqs)
-    _, target_cross_entropy_losses, target_cross_entropy_loss_weights = \
+    _, target_cross_entropy_losses, target_cross_entropy_loss_weights, network = \
             Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, input_mask)
 
     global_step = tf.Variable(

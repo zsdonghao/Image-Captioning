@@ -20,7 +20,7 @@ def W(W=None, second=10, saveable=True, shape=[28,28], name='mnist', fig_idx=239
         The weight matrix
     second : int
         The display second(s) for the image(s), if saveable is False.
-    saveable : boolean
+    saveable : boolen
         Save or plot the figure.
     shape : a list with 2 int
         The shape of feature image, MNIST is [28, 80].
@@ -60,7 +60,6 @@ def W(W=None, second=10, saveable=True, shape=[28,28], name='mnist', fig_idx=239
             #     feature = np.zeros_like(feature)
             plt.imshow(np.reshape(feature ,(shape[0],shape[1])),
                     cmap='gray', interpolation="nearest")#, vmin=np.min(feature), vmax=np.max(feature))
-            # plt.title(name)
             # ------------------------------------------------------------
             # plt.imshow(np.reshape(W[:,count-1] ,(np.sqrt(size),np.sqrt(size))), cmap='gray', interpolation="nearest")
             plt.gca().xaxis.set_major_locator(plt.NullLocator())    # distable tick
@@ -72,7 +71,7 @@ def W(W=None, second=10, saveable=True, shape=[28,28], name='mnist', fig_idx=239
         plt.draw()
         plt.pause(second)
 
-def frame(I=None, second=5, saveable=True, name='frame', cmap=None, fig_idx=12836):
+def frame(I=None, second=5, saveable=True, name='frame', fig_idx=12836):
     """Display a frame(image). Make sure OpenAI Gym render() is disable before using it.
 
     Parameters
@@ -81,12 +80,10 @@ def frame(I=None, second=5, saveable=True, name='frame', cmap=None, fig_idx=1283
         The image
     second : int
         The display second(s) for the image(s), if saveable is False.
-    saveable : boolean
+    saveable : boolen
         Save or plot the figure.
     name : a string
         A name to save the image, if saveable is True.
-    cmap : None or string
-        'gray' for greyscale, None for default, etc.
     fig_idx : int
         matplotlib figure index.
 
@@ -100,11 +97,7 @@ def frame(I=None, second=5, saveable=True, name='frame', cmap=None, fig_idx=1283
         plt.ion()
     fig = plt.figure(fig_idx)      # show all feature images
 
-    if len(I.shape) and I.shape[-1]==1:     # (10,10,1) --> (10,10)
-        I = I[:,:,0]
-
-    plt.imshow(I, cmap)
-    plt.title(name)
+    plt.imshow(I)
     # plt.gca().xaxis.set_major_locator(plt.NullLocator())    # distable tick
     # plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
@@ -123,7 +116,7 @@ def CNN2d(CNN=None, second=10, saveable=True, name='cnn', fig_idx=3119362):
         The image. e.g: 64 5x5 RGB images can be (5, 5, 3, 64).
     second : int
         The display second(s) for the image(s), if saveable is False.
-    saveable : boolean
+    saveable : boolen
         Save or plot the figure.
     name : a string
         A name to save the image, if saveable is True.
@@ -185,7 +178,7 @@ def images2d(images=None, second=10, saveable=True, name='images', dtype=None,
         The images.
     second : int
         The display second(s) for the image(s), if saveable is False.
-    saveable : boolean
+    saveable : boolen
         Save or plot the figure.
     name : a string
         A name to save the image, if saveable is True.
@@ -225,11 +218,9 @@ def images2d(images=None, second=10, saveable=True, name='images', dtype=None,
                 plt.imshow(
                         np.reshape(images[count-1,:,:], (n_row, n_col)),
                         cmap='gray', interpolation="nearest")
-                # plt.title(name)
             elif n_color == 3:
                 plt.imshow(images[count-1,:,:],
                         cmap='gray', interpolation="nearest")
-                # plt.title(name)
             else:
                 raise Exception("Unknown n_color")
             plt.gca().xaxis.set_major_locator(plt.NullLocator())    # distable tick
@@ -255,7 +246,7 @@ def tsne_embedding(embeddings, reverse_dictionary, plot_only=500,
         The number of examples to plot, choice the most common words.
     second : int
         The display second(s) for the image(s), if saveable is False.
-    saveable : boolean
+    saveable : boolen
         Save or plot the figure.
     name : a string
         A name to save the image, if saveable is True.

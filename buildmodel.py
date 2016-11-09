@@ -138,14 +138,15 @@ def process_image(mode, encoded_image, thread_id=0):
       # Resize image.
       assert (resize_height > 0) == (resize_width > 0)
       if resize_height:
-        # image = tf.image.resize_images(image,
-        #                                size=[resize_height, resize_width],
-        #                                method=tf.image.ResizeMethod.BILINEAR)
-
-        image = tf.image.resize_images(image,       # DH Modify
-                                       new_height=resize_height,
-                                       new_width=resize_width,
-                                       method=tf.image.ResizeMethod.BILINEAR)
+        try:
+            image = tf.image.resize_images(image,
+                                           size=[resize_height, resize_width],
+                                           method=tf.image.ResizeMethod.BILINEAR)
+        except:
+            image = tf.image.resize_images(image,     # for TF 0.10
+                                           new_height=resize_height,
+                                           new_width=resize_width,
+                                           method=tf.image.ResizeMethod.BILINEAR)
 
       # Crop to final dimensions.
       if is_training:
@@ -581,7 +582,7 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
                                       initial_state = None,
                                       sequence_length = tf.ones([1]),
                                       return_seq_2d = True,   # stack denselayer after it
-                                      name = '',
+                                      name = 'embed',
                                       )
             lstm_scope.reuse_variables()
 
@@ -600,7 +601,7 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
                           initial_state = state_tuple,  # different with training
                           sequence_length = tf.ones([1]),
                           return_seq_2d = True,   # stack denselayer after it
-                          name = '',
+                          name = 'embed',
                           )
             network = net_seq_rnn
             network.all_layers = net_image_embeddings.all_layers + network.all_layers
@@ -620,18 +621,20 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
                                       initial_state = None,
                                       sequence_length = tf.ones([32]),
                                       return_seq_2d = True,   # stack denselayer after it
-                                      name = '',
+                                      name = 'embed',
                                       )
             # Then, uses the hidden state which contains image info as the initial_state when feeding the sentence.
             lstm_scope.reuse_variables()
+            tl.layers.set_name_reuse(True)
             network = tl.layers.DynamicRNNLayer(net_seq_embeddings,
                                       cell_fn = tf.nn.rnn_cell.BasicLSTMCell,
                                       n_hidden = num_lstm_units,
                                       initializer = initializer,
                                       dropout = dropout,
                                       initial_state = net_img_rnn.final_state,      # feed in hidden state after feeding image
+                                      sequence_length = tf.reduce_sum(input_mask, 1),
                                       return_seq_2d = True,     # stack denselayer after it
-                                      name = '',
+                                      name = 'embed',
                                       )
             network.all_layers = net_image_embeddings.all_layers + network.all_layers
             network.all_params = net_image_embeddings.all_params + network.all_params
@@ -640,7 +643,7 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
     network = tl.layers.DenseLayer(network, n_units=vocab_size, act=tf.identity, W_init=initializer, name="logits") # TL
     logits = network.outputs
 
-    network.print_layers()
+    # network.print_layers()
 
     if mode == "inference":
       softmax = tf.nn.softmax(logits, name="softmax")
@@ -660,7 +663,7 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
       total_loss = total_loss
       target_cross_entropy_losses = losses  # Used in evaluation.
       target_cross_entropy_loss_weights = weights  # Used in evaluation.
-      return total_loss, target_cross_entropy_losses, target_cross_entropy_loss_weights
+      return total_loss, target_cross_entropy_losses, target_cross_entropy_loss_weights, network
 
 
 

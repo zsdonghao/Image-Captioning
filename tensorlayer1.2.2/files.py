@@ -160,6 +160,7 @@ def load_cifar10_dataset(shape=(-1, 32, 32, 3), plotable=False, second=3):
     import pickle
     import numpy as np
 
+
     # We first define a download function, supporting both Python 2 and 3.
     filename = 'cifar-10-python.tar.gz'
     if sys.version_info[0] == 2:
@@ -186,9 +187,11 @@ def load_cifar10_dataset(shape=(-1, 32, 32, 3), plotable=False, second=3):
         tar.close()
         print("Extracted to %s" % names[0])
 
+
     if not os.path.exists('cifar-10-batches-py'):
         download(filename)
         un_tar(filename)
+
 
     def unpickle(file):
         fp = open(file, 'rb')
@@ -666,7 +669,7 @@ def load_npz(path='', name='model.npz'):
     name : a string or None
         The name of the .npz file.
 
-    Returns
+    Return
     --------
     params : list
         A list of parameters in order.
