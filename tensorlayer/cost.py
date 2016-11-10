@@ -92,7 +92,7 @@ def dice_coe(output, target, epsilon=1e-10):
     ---------
     >>> outputs = pixel_wise_softmax(network.outputs)
     >>> dice_loss = 1 - dice_coe(outputs, y_, epsilon=1e-5)
-    
+
     References
     -----------
     - `wiki-dice <https://en.wikipedia.org/wiki/Sørensen–Dice_coefficient>`_
@@ -160,7 +160,7 @@ def cross_entropy_seq_with_mask(logits, target_seqs, input_mask, return_details=
     --------
     - see Image Captioning Example.
     """
-    print("     cross_entropy_seq_with_mask : Undocumented")
+    # print("     cross_entropy_seq_with_mask : Undocumented")
     targets = tf.reshape(target_seqs, [-1])   # to one vector
     weights = tf.to_float(tf.reshape(input_mask, [-1]))   # to one vector like targets
     losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits, targets)

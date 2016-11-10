@@ -23,7 +23,7 @@ DIR = "/home/haodong/Workspace/image_captioning"
 ## DIR =========================================================================
 # Directory containing preprocessed MSCOCO data.
 # MSCOCO_DIR = DIR + "/data/mscoco"
-MSCOCO_DIR = "/home/haodong/Workspace/im2txt/im2txt/data/mscoco"
+MSCOCO_DIR = "/home/haodong/Workspace/image_captioning/data/mscoco"
 # Inception v3 checkpoint file.
 INCEPTION_CHECKPOINT = DIR + "/data/inception_v3.ckpt"
 # Directory to save the model.
@@ -91,7 +91,7 @@ with g.as_default():
     # ## Example of read data
     # from im2txt.inference_utils import vocabulary
     # # vocab = vocabulary.Vocabulary(FLAGS.vocab_file)
-    # vocab = vocabulary.Vocabulary('/home/haodong/Workspace/im2txt/im2txt/data/mscoco/word_counts.txt')
+    # vocab = vocabulary.Vocabulary('/home/haodong/Workspace/image_captioning/data/mscoco/word_counts.txt')
     # print('vocab:',[vocab.id_to_word(w) for w in range(100)])
     # sess = tf.Session()#tf.InteractiveSession()
     # sess.run(tf.initialize_all_variables())
@@ -198,6 +198,6 @@ for step in range(sess.run(global_step), number_of_steps):
     if (step % 10000) == 0 and step != 0:
         # save_path = saver.save(sess, MODEL_DIR+"/train/model.ckpt-"+str(step))
         save_path = saver.save(sess, MODEL_DIR+"/train/model.ckpt", global_step=step)
-        tl.files.save_npz(network.all_params , name=MODEL_DIR+'train/model_image_caption.npz')
+        tl.files.save_npz(network.all_params , name=MODEL_DIR+'/train/model_image_caption.npz')
 coord.request_stop()
 coord.join(threads)

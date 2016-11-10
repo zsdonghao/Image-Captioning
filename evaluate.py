@@ -24,9 +24,9 @@ import tensorlayer as tl
 from buildmodel import *
 
 
-DIR = "/home/dsigpu4/Samba/image_captioning"
+DIR = "/home/haodong/Workspace/image_captioning"
 # MSCOCO_DIR = DIR + "/data/mscoco
-MSCOCO_DIR = "/home/dsigpu4/Samba/im2txt/im2txt/data/mscoco"
+MSCOCO_DIR = "/home/haodong/Workspace/image_captioning/data/mscoco"
 MODEL_DIR = DIR + "/model"
 # Disable GPU
 # export CUDA_VISIBLE_DEVICES=""
