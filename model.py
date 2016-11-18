@@ -31,7 +31,9 @@ num_preprocess_threads = 4
 # Batch size.
 batch_size = 32
 # Dimensions of Inception v3 input images.
-image_height = 299
+resize_height=346   # before crop
+resize_width=346
+image_height = 299  # crop
 image_width = 299
 # Scale used to initialize model variables.
 initializer_scale = 0.08
@@ -96,8 +98,8 @@ def process_image(mode, encoded_image, thread_id=0):
                       is_training,
                       height,
                       width,
-                      resize_height=346,
-                      resize_width=346,
+                      resize_height=resize_height,
+                      resize_width=resize_width,
                       thread_id=0,
                       image_format="jpeg"):
       """Decode an image, resize and apply random distortions.
@@ -574,17 +576,20 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
     if mode == 'inference':
         with tf.variable_scope("lstm", initializer=initializer) as lstm_scope:
             tl.layers.set_name_reuse(True)
-            net_image_embeddings = tl.layers.ReshapeLayer(net_image_embeddings, shape=(1, 1, embedding_size))
+            net_image_embeddings = tl.layers.ReshapeLayer(net_image_embeddings, shape=(-1, 1, embedding_size))
+            print(net_image_embeddings.outputs)
+            # exit()
             net_img_rnn = tl.layers.DynamicRNNLayer(net_image_embeddings,
                                       cell_fn = tf.nn.rnn_cell.BasicLSTMCell,
                                       n_hidden = num_lstm_units,
                                       dropout = None,
                                       initial_state = None,
-                                      sequence_length = tf.ones([1]),
+                                      sequence_length = tf.ones([batch_size]),
                                       return_seq_2d = True,   # stack denselayer after it
                                       name = 'embed',
                                       )
             lstm_scope.reuse_variables()
+            # exit()
 
             # # In inference mode, use concatenated states for convenient feeding and fetching.
             # Placeholder for feeding a batch of concatenated states.
@@ -599,7 +604,7 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
                           n_hidden = num_lstm_units,
                           dropout = None,
                           initial_state = state_tuple,  # different with training
-                          sequence_length = tf.ones([1]),
+                          sequence_length = tf.ones([batch_size]),
                           return_seq_2d = True,   # stack denselayer after it
                           name = 'embed',
                           )
