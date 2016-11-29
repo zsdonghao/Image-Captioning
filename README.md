@@ -2,6 +2,8 @@
 
 We reimplemented the complicated [Google' Image Captioning](https://github.com/tensorflow/models/tree/master/im2txt) model by simple [TensorLayer](https://github.com/zsdonghao/tensorlayer) APIs.
 
+This script run well under Python2 or 3 and TensorFlow 10 or 11.
+
 ### 1. Prepare MSCOCO data and Inception model
 Before you run the scripts, you need to follow Google's [setup guide]((https://github.com/tensorflow/models/tree/master/im2txt)), and setup the model, ckpt and data directories in *.py.
 

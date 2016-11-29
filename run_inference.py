@@ -35,8 +35,8 @@ IMAGE_FILE="/home/haodong/Workspace/image_captioning/data/mscoco/raw-data/val201
 tf.logging.set_verbosity(tf.logging.INFO) # Enable tf.logging
 
 max_caption_length = 20
-top_k = 3
-n_captions = 20
+top_k = 2
+n_captions = 50
 
 def main(_):
   # Model checkpoint file or directory containing a model checkpoint file.
