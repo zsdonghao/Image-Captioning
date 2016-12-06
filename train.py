@@ -191,7 +191,7 @@ with g.as_default():
 print('Start training') # the 1st epoch will take a while
 coord = tf.train.Coordinator()
 threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-for step in range(sess.run(global_step), number_of_steps):
+for step in range(sess.run(global_step), number_of_steps+1):
     start_time = time.time()
     loss, _ = sess.run([total_loss, train_op])
     print("step %d: loss = %.4f (%.2f sec)" % (step, loss, time.time() - start_time))
