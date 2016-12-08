@@ -35,7 +35,8 @@ IMAGE_FILE="/home/haodong/Workspace/image_captioning/data/mscoco/raw-data/val201
 tf.logging.set_verbosity(tf.logging.INFO) # Enable tf.logging
 
 max_caption_length = 20
-top_k = 2
+top_k = 4
+print("top k:%d" % top_k)
 n_captions = 50
 
 def main(_):
