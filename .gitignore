@@ -7,4 +7,5 @@ data/mscoco/*
 data/*ckpt
 *ckpt
 *ckpt*
+*pyc
 model
