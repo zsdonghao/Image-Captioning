@@ -20,3 +20,6 @@ Before you run the scripts, you need to follow Google's [setup guide]((https://g
 
 ### 4. Generate captions by given image and model
 - via ``run_inference.py``
+
+### 5. Evaluation
+[tylin/coco-caption](https://github.com/tylin/coco-caption/blob/master/cocoEvalCapDemo.ipynb)
