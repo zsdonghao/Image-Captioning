@@ -22,4 +22,4 @@ Before you run the scripts, you need to follow Google's [setup guide]((https://g
 - via ``run_inference.py``
 
 ### 5. Evaluation
-[tylin/coco-caption](https://github.com/tylin/coco-caption/blob/master/cocoEvalCapDemo.ipynb)
+- [tylin/coco-caption](https://github.com/tylin/coco-caption/blob/master/cocoEvalCapDemo.ipynb)
