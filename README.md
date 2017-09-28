@@ -9,7 +9,7 @@ Before you run the scripts, you need to follow Google's [setup guide]((https://g
 
 - Creat a ``data`` folder.
 - Download and Preprocessing MSCOCO Data [click here](https://github.com/tensorflow/models/tree/master/research/im2txt)
-- Download the Inception_V3 CKPT [click here](https://github.com/tensorflow/models/tree/master/slim#Pretrained)
+- Download the Inception_V3 CKPT [click here](https://github.com/tensorflow/models/tree/master/research/slim)
 
 
 ### 2. Train the model
