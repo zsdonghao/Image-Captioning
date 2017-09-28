@@ -8,8 +8,8 @@ This script run well under Python2 or 3 and TensorFlow 10 or 11.
 Before you run the scripts, you need to follow Google's [setup guide]((https://github.com/tensorflow/models/tree/master/im2txt)), and setup the model, ckpt and data directories in *.py.
 
 - Creat a ``data`` folder.
-- Download and Preprocessing MSCOCO Data [click here](https://github.com/zsdonghao/models/tree/master/im2txt#prepare-the-training-data)
-- Download the Inception_V3 CKPT [click here](https://github.com/zsdonghao/models/tree/master/im2txt#download-the-inception-v3-checkpoint)
+- Download and Preprocessing MSCOCO Data [click here](https://github.com/tensorflow/models/tree/master/research/im2txt)
+- Download the Inception_V3 CKPT [click here](https://github.com/tensorflow/models/tree/master/slim#Pretrained)
 
 
 ### 2. Train the model
