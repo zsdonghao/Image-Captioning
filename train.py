@@ -18,12 +18,13 @@ import time
 import numpy as np
 from buildmodel import *
 
-DIR = "/home/haodong/Workspace/image_captioning"
+# DIR = "/home/haodong/Workspace/image_captioning"
+DIR = '/home/lei/Documents/Workspace/models/research/im2txt/im2txt'
 
 ## DIR =========================================================================
 # Directory containing preprocessed MSCOCO data.
-# MSCOCO_DIR = DIR + "/data/mscoco"
-MSCOCO_DIR = "/home/haodong/Workspace/image_captioning/data/mscoco"
+MSCOCO_DIR = DIR + "/data/mscoco"
+# MSCOCO_DIR = "/home/haodong/Workspace/image_captioning/data/mscoco"
 # Inception v3 checkpoint file.
 INCEPTION_CHECKPOINT = DIR + "/data/inception_v3.ckpt"
 # Directory to save the model.
@@ -193,8 +194,11 @@ coord = tf.train.Coordinator()
 threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 for step in range(sess.run(global_step), number_of_steps+1):
     start_time = time.time()
-    loss, _ = sess.run([total_loss, train_op])
-    print("step %d: loss = %.4f (%.2f sec)" % (step, loss, time.time() - start_time))
+    try:
+        loss, _ = sess.run([total_loss, train_op])
+        print("step %d: loss = %.4f (%.2f sec)" % (step, loss, time.time() - start_time))
+    except:
+        exit()
     if (step % 10000) == 0 and step != 0:
         # save_path = saver.save(sess, MODEL_DIR+"/train/model.ckpt-"+str(step))
         save_path = saver.save(sess, MODEL_DIR+"/train/model.ckpt", global_step=step)

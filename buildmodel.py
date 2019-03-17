@@ -121,7 +121,8 @@ def process_image(mode, encoded_image, thread_id=0):
       # only logged in thread 0.
       def image_summary(name, image):
         if not thread_id:
-          tf.image_summary(name, tf.expand_dims(image, 0))
+          # tf.image_summary(name, tf.expand_dims(image, 0)) # TF0.11
+          tf.summary.image(name, tf.expand_dims(image, 0)) # TF1.0.0
 
       # Decode image into a float32 Tensor of shape [?, ?, 3] with values in [0, 1).
       with tf.name_scope("decode"):#, values=[encoded_image]):   # DH modify
@@ -164,8 +165,10 @@ def process_image(mode, encoded_image, thread_id=0):
       image_summary("final_image", image)
 
       # Rescale to [-1,1] instead of [0, 1]
-      image = tf.sub(image, 0.5)
-      image = tf.mul(image, 2.0)
+      # image = tf.sub(image, 0.5) # TF0.11
+      # image = tf.mul(image, 2.0)
+      image = tf.subtract(image, 0.5)    # TF1.0.0
+      image = tf.multiply(image, 2.0)
       return image
     return _process_image(encoded_image,
                           is_training= mode == 'train', # If Traning, distort image; if None, crop central part; the size unchange.
@@ -244,7 +247,8 @@ def batch_with_dynamic_pad(images_and_captions,
   enqueue_list = []
   for image, caption in images_and_captions:
     caption_length = tf.shape(caption)[0]
-    input_length = tf.expand_dims(tf.sub(caption_length, 1), 0)
+    # input_length = tf.expand_dims(tf.sub(caption_length, 1), 0) # TF0.11
+    input_length = tf.expand_dims(tf.subtract(caption_length, 1), 0)   # TF1.0.0
 
     input_seq = tf.slice(caption, [0], input_length)
     target_seq = tf.slice(caption, [1], input_length)
@@ -260,9 +264,12 @@ def batch_with_dynamic_pad(images_and_captions,
 
   if add_summaries:
     lengths = tf.add(tf.reduce_sum(mask, 1), 1)
-    tf.scalar_summary("caption_length/batch_min", tf.reduce_min(lengths))
-    tf.scalar_summary("caption_length/batch_max", tf.reduce_max(lengths))
-    tf.scalar_summary("caption_length/batch_mean", tf.reduce_mean(lengths))
+    # tf.scalar_summary("caption_length/batch_min", tf.reduce_min(lengths)) # TF0.11
+    # tf.scalar_summary("caption_length/batch_max", tf.reduce_max(lengths))
+    # tf.scalar_summary("caption_length/batch_mean", tf.reduce_mean(lengths))
+    tf.summary.scalar("caption_length/batch_min", tf.reduce_min(lengths)) # TF1.0.0
+    tf.summary.scalar("caption_length/batch_max", tf.reduce_max(lengths))
+    tf.summary.scalar("caption_length/batch_mean", tf.reduce_mean(lengths))
 
   return images, input_seqs, target_seqs, mask
 
@@ -335,10 +342,10 @@ def prefetch_input_data(reader,
     enqueue_ops.append(values_queue.enqueue([value]))
   tf.train.queue_runner.add_queue_runner(tf.train.queue_runner.QueueRunner(
       values_queue, enqueue_ops))
-  tf.scalar_summary(
+  # tf.scalar_summary(# TF0.11
+  tf.summary.scalar(  # TF1.0.0
       "queue/%s/fraction_of_%d_full" % (values_queue.name, capacity),
       tf.cast(values_queue.size(), tf.float32) * (1. / capacity))
-
   return values_queue
 
 
@@ -576,7 +583,8 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
             tl.layers.set_name_reuse(True)
             net_image_embeddings = tl.layers.ReshapeLayer(net_image_embeddings, shape=(1, 1, embedding_size))
             net_img_rnn = tl.layers.DynamicRNNLayer(net_image_embeddings,
-                                      cell_fn = tf.nn.rnn_cell.BasicLSTMCell,
+                                      # cell_fn = tf.nn.rnn_cell.BasicLSTMCell, # TF0.11
+                                      cell_fn = tf.contrib.rnn.BasicLSTMCell, # TF1.0.0
                                       n_hidden = num_lstm_units,
                                       dropout = None,
                                       initial_state = None,
@@ -591,11 +599,14 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
             state_feed = tf.placeholder(dtype=tf.float32,
                                         shape=[None, sum(net_img_rnn.cell.state_size)],
                                         name="state_feed")
-            state_tuple = tf.split(1, 2, state_feed)
-            state_tuple = tf.nn.rnn_cell.LSTMStateTuple(state_tuple[0], state_tuple[1])
+            # state_tuple = tf.split(1, 2, state_feed) # TF0.11
+            state_tuple = tf.split(state_feed, 2, 1)  # TF1.0.0
+            # state_tuple = tf.nn.rnn_cell.LSTMStateTuple(state_tuple[0], state_tuple[1]) # TF0.11
+            state_tuple = tf.contrib.rnn.LSTMStateTuple(state_tuple[0], state_tuple[1]) # TF1.0.0
 
             net_seq_rnn = tl.layers.DynamicRNNLayer(net_seq_embeddings,
-                          cell_fn = tf.nn.rnn_cell.BasicLSTMCell,
+                          # cell_fn = tf.nn.rnn_cell.BasicLSTMCell, # TF0.11
+                          cell_fn = tf.contrib.rnn.BasicLSTMCell, # TF1.0.0
                           n_hidden = num_lstm_units,
                           dropout = None,
                           initial_state = state_tuple,  # different with training
@@ -614,7 +625,8 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
                 dropout = None
             net_image_embeddings = tl.layers.ReshapeLayer(net_image_embeddings, shape=(batch_size, 1, embedding_size))
             net_img_rnn = tl.layers.DynamicRNNLayer(net_image_embeddings,
-                                      cell_fn = tf.nn.rnn_cell.BasicLSTMCell,
+                                      # cell_fn = tf.nn.rnn_cell.BasicLSTMCell, # TF0.11
+                                      cell_fn = tf.contrib.rnn.BasicLSTMCell, # TF1.0.0
                                       n_hidden = num_lstm_units,
                                       initializer = initializer,
                                       dropout = dropout,
@@ -627,7 +639,8 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
             lstm_scope.reuse_variables()
             tl.layers.set_name_reuse(True)
             network = tl.layers.DynamicRNNLayer(net_seq_embeddings,
-                                      cell_fn = tf.nn.rnn_cell.BasicLSTMCell,
+                                      # cell_fn = tf.nn.rnn_cell.BasicLSTMCell, # TF0.11
+                                      cell_fn = tf.contrib.rnn.BasicLSTMCell, # TF1.0.0
                                       n_hidden = num_lstm_units,
                                       initializer = initializer,
                                       dropout = dropout,
@@ -655,10 +668,13 @@ def Build_Model(mode, net_image_embeddings, net_seq_embeddings, target_seqs, inp
       total_loss = tf.contrib.losses.get_total_loss()
 
       # Add summaries.
-      tf.scalar_summary("batch_loss", batch_loss)
-      tf.scalar_summary("total_loss", total_loss)
+      # tf.scalar_summary("batch_loss", batch_loss) # TF0.11
+      # tf.scalar_summary("total_loss", total_loss)
+      tf.summary.scalar('batch_loss', batch_loss)  # TF1.0.0
+      tf.summary.scalar('total_loss', total_loss)
       for var in tf.trainable_variables():
-        tf.histogram_summary(var.op.name, var)
+        # tf.histogram_summary(var.op.name, var) # TF0.11
+        tf.summary.histogram(var.op.name, var) # TF1.0.0
 
       total_loss = total_loss
       target_cross_entropy_losses = losses  # Used in evaluation.
